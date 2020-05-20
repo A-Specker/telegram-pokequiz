@@ -17,6 +17,8 @@ shiny = False
 shiny_only = False
 curr_int = 0
 curr_name = ''
+curr_name_ger = ''
+
 in_quiz = False
 
 def start(update, context):
@@ -28,11 +30,12 @@ def help(update, context):
     """Send a message when the command /help is issued."""
     update.message.reply_text('Options are:\n/new\n/tip <pokename(lower)>\n/stop\n/gen 1,2,...,5 (use Komma so seperate, dont do whitespaces)\n/backside <True/False/only>  ')
 
-
+# unused, delete 
 def echo(update, context):
     """Echo the user message."""
     global in_quiz
     global curr_name
+    global curr_name_ger
     global curr_int
 
     print(update.message.from_user)
@@ -44,13 +47,13 @@ def echo(update, context):
         print(tip)
         # print(curr_name)
         # print(str(tip) is str(curr_name))
-        if tip is curr_name:
+        if tip is curr_name or curr_name_ger:
             logger.info('Done')
             update.message.reply_text("Richtig war die Lösung!")
             in_quiz = False
             curr_int = 0
             curr_name = ''
-
+            curr_name_ger = ''
 
 def error(update, context):
     """Log Errors caused by Updates."""
@@ -60,29 +63,28 @@ def error(update, context):
 def tip(update, context):
     global in_quiz
     global curr_name
+    global curr_name_ger
     global curr_int
 
 
     if in_quiz:
         tipper = context.args[0].lower()
         print(curr_name)
-        if curr_name.lower() == tipper.lower():
+        if curr_name.lower() == tipper.lower() or curr_name_ger.lower() == tipper.lower():
             update.message.reply_text("Richtig, {} war die Lösung!".format(curr_name))
             in_quiz = False
             curr_int = 0
-
-def error(update, context):
-    """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
 def stop(update, context):
     global in_quiz
     global curr_name
+    global curr_name_ger
     global curr_int
 
     in_quiz = False
     curr_name = ''
+    curr_name_ger = ''
     curr_int = 0
 
 
@@ -127,6 +129,7 @@ def post_quiz(update, context):
     global in_quiz
     global curr_int
     global curr_name
+    global curr_name_ger
     global levelz
     global shiny
     global shiny_only
@@ -150,7 +153,9 @@ def post_quiz(update, context):
     num = random.randint(int(config[gen]['from']), int (config[gen]['to']))
     curr_int = num
     pokes = import_pokes()
+    pokes_ger = import_ger_pokes()
     curr_name = pokes[str(curr_int)]
+    curr_name_ger = pokes_ger[str(curr_int)]
     sfx = '.png'
     img_path = './imgs/' + gen + '/' + back_path + '/' + str(num) + sfx
     logger.info(img_path)
@@ -207,7 +212,6 @@ def get_config():
 
 def main():
     updater = Updater("1202974803:AAFLUR55UYG-dn1wUeZqOkoHQfDplF08EE4", use_context=True)
-    config = get_config()
     dp = updater.dispatcher
 
 
@@ -221,10 +225,6 @@ def main():
     dp.add_handler(CommandHandler("new", post_quiz))
     dp.add_handler(CommandHandler("tip", tip))
     dp.add_handler(CommandHandler("stop", stop))
-
-
-
-
 
 
     dp.add_handler(MessageHandler(Filters.text, echo))
@@ -243,6 +243,17 @@ def import_pokes():
             pokes.append(row)
         for p in pokes:
             dct[p[0]] = p[1]
+    return dct
+
+def import_ger_pokes():
+    pokes = []
+    dct = {}
+    with open('deu.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=",")
+        for row in csv_reader:
+            pokes.append(row)
+        for p in pokes:
+            dct[p[0]] = p[1].replace(" ", "").lower()
     return dct
 
 if __name__ == '__main__':
